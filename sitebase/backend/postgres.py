@@ -76,8 +76,8 @@ FROM node_cache WHERE id = %(id)s LIMIT 1))"""
     SQL_SELECT_REFERERS = "SELECT id FROM nodes \
 WHERE manifest = ANY(%(referers)s) AND value->%(field)s = %(value)s"
 
-    SQL_SELECT_DEPENDS = "SELECT id FROM nodes \
-WHERE depends @> %(depends)s"
+    SQL_SELECT_DEPENDS = "SELECT depends FROM node_cache \
+WHERE id = %(id)s LIMIT 1"
 
     SQL_SELECT_CACHE_EX = """SELECT id, (each(value)).key, \
     (each(value)).value FROM (SELECT id, (value \
@@ -465,13 +465,13 @@ WHERE %(where_clause)s"
 
     @defer.inlineCallbacks
     def _select_depends(self, c, node_id):
-        c  = yield c.execute(self.SQL_SELECT_NODE_BASIC, dict(id=node_id))
+        c  = yield c.execute(self.SQL_SELECT_DEPENDS, dict(id=node_id))
         nodes = c.fetchall()
 
         if not nodes:
             defer.returnValue([])
 
-        node_id, manifest, cn, depends = nodes[0]
+        depends = nodes[0]
         if depends:
             defer.returnValue(depends)
         else:
