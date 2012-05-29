@@ -79,6 +79,11 @@ WHERE manifest = ANY(%(referers)s) AND value->%(field)s = %(value)s"
     SQL_SELECT_DEPENDS = "SELECT depends FROM node_cache \
 WHERE id = %(id)s LIMIT 1"
 
+    SQL_UPDATE_DEPENDS = "UPDATE node_cache SET depends = \
+(SELECT ARRAY(SELECT DISTINCT \
+UNNEST(array_append(depends, %(id)s)) ORDER BY 1)) \
+WHERE id = ANY(%(depends)s)"
+
     SQL_SELECT_CACHE_EX = """SELECT id, (each(value)).key, \
     (each(value)).value FROM (SELECT id, (value \
     || ('.manifest=>\"' || replace(manifest, '"', '\\\\"') || '\"')::hstore \
@@ -471,7 +476,7 @@ WHERE %(where_clause)s"
         if not nodes:
             defer.returnValue([])
 
-        depends = nodes[0]
+        depends = nodes[0][0]
         if depends:
             defer.returnValue(depends)
         else:
@@ -557,9 +562,14 @@ WHERE %(where_clause)s"
             depends.remove(node_id)
         relation = {"id": node[".id"],
                     "manifest": node[".manifest"],
-                    "cn": node[".cn"],
-                    "depends": list(depends)}
+                    "cn": node[".cn"]}
         relation["value"] = self._serialize_hstore(cache)
+        c = yield c.execute(self.SQL_SELECT_DEPENDS, dict(id=node_id))
+        node_cache = c.fetchall()
+        if node_cache:
+            relation["depends"] = node_cache[0][0]
+        c = yield c.execute(self.SQL_UPDATE_DEPENDS,
+                            dict(id=node[".id"], depends=list(depends)))
         c = yield c.execute(self.SQL_DELETE_CACHE, dict(id=[node_id]))
         c = yield c.execute(self.SQL_CREATE_CACHE, relation)
         affected = yield c._cursor.rowcount
