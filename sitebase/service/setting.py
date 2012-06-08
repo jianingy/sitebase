@@ -5,6 +5,7 @@ from twisted.internet import defer
 from twisted.internet.threads import deferToThread
 from twisted.python.failure import Failure
 
+from sitebase.utils import tag_memoize
 from sitebase.backend.postgres import dbBackend
 
 from ysl.twisted.log import debug, info
@@ -86,6 +87,7 @@ class SettingService(Resource):
     def render_not_found(self, input, request):
         return dict()
 
+    @tag_memoize('field')
     def render_field(self, input, request):
         yaml = self.config.get("extra", "field")
         with codecs.open(yaml, "r", encoding="utf-8") as f:
@@ -93,6 +95,7 @@ class SettingService(Resource):
             return tree
         return dict()
 
+    @tag_memoize('manifest')
     def render_manifest(self, input, request):
         yaml = self.config.get("extra", "manifest")
         with codecs.open(yaml, "r", encoding="utf-8") as f:
@@ -100,6 +103,7 @@ class SettingService(Resource):
             return tree
         return dict()
 
+    @tag_memoize('cache')
     def render_cache(self, input, request):
         yaml = self.config.get("extra", "cache")
         with codecs.open(yaml, "r", encoding="utf-8") as f:
