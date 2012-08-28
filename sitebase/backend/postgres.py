@@ -568,6 +568,8 @@ WHERE %(where_clause)s"
         node_cache = c.fetchall()
         if node_cache:
             relation["depends"] = node_cache[0][0]
+        else:
+            relation["depends"] = set()
         c = yield c.execute(self.SQL_UPDATE_DEPENDS,
                             dict(id=node[".id"], depends=list(depends)))
         c = yield c.execute(self.SQL_DELETE_CACHE, dict(id=[node_id]))
