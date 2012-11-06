@@ -537,6 +537,10 @@ WHERE %(where_clause)s"
                                                    cache_manifest[next_v])
                     del v[:]
                     break
+
+            # if the last node is a dict, itself must be in depends
+            if isinstance(value, dict):
+                current_node_id = value[".id"]
             depends.add(int(current_node_id))
             if v:
                 warn("parsing error for node %s" % node[".id"])
