@@ -262,6 +262,14 @@ WHERE %(where_clause)s"
             cache = yield self._build_cache(c, node_id, node_cache)
             if cache["success"]:
                 cache_affected += cache["affected"]
+
+                depends = yield self._select_depends(c, node_id)
+                for depend in depends:
+                    cache = yield self._build_cache(c, depend)
+                    if cache["success"]:
+                        affected = affected + 1
+                cache = dict(success=True, affacted=affected)
+
         node_cache.clear()
         defer.returnValue((affected, cache_affected))
 
